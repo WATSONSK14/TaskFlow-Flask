@@ -1,8 +1,8 @@
 from flask import Flask, render_template, redirect, url_for, flash, request
-from flask_login import login_user, logout_user, login_required, current_user
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timezone, timedelta
-from extensions import db, login_manager
+from extensions import db
 from forms import RegisterForm, LoginForm
 from models import User, Board, List, Quest
 from services import *
@@ -12,6 +12,7 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv(override=False)
+login_manager = LoginManager()
 app = Flask(__name__)
 
 if os.getenv('FLASK_ENV') == "production":
@@ -105,85 +106,84 @@ def board_detail(board_id):
     if current_board is None:
         return handle_redirect("Yetkisiz Erişim", "warning")
 
-        
-        action = request.form.get('action')
-        handler = ACTIONS.get(action)
-        if handler:
-            # Pano Detayları (Listeler)
-            if action == 'create_list':
-                title = request.form.get('list_title')
-                if not title:
-                    return handle_redirect("Başlık Boş Olamaz", "warning", 'board_detail', board_id=board_id)
-                new_list = handler(title=title, board_id=board_id, current_board=current_board)
-                return handle_redirect("Liste Başarıyla Oluşturuldu", "success","board_detail", board_id=board_id)
+    action = request.form.get('action')
+    handler = ACTIONS.get(action)
+    if handler:
+        # Pano Detayları (Listeler)
+        if action == 'create_list':
+            title = request.form.get('list_title')
+            if not title:
+                return handle_redirect("Başlık Boş Olamaz", "warning", 'board_detail', board_id=board_id)
+            new_list = handler(title=title, board_id=board_id, current_board=current_board)
+            return handle_redirect("Liste Başarıyla Oluşturuldu", "success","board_detail", board_id=board_id)
 
-            if action == 'update_list':
-                title = request.form.get('list_title')
-                if not title:
-                    return handle_redirect("Başlık Boş Olamaz", "warning", 'board_detail', board_id=board_id)
-                list_id = request.form.get('list_id')
-                current_list = handler(title=title, list_id=list_id, current_board=current_board)
-                if not current_list:
-                    return handle_redirect("Yetkisiz Erişim", "warning" , 'board_detail', board_id=board_id)
-                else:
-                    return handle_redirect("Liste Başarıyla Güncellendi", "success" , 'board_detail', board_id=board_id)
-            if action == 'delete_list':
-                list_id = request.form.get('list_id')
-                current_list = handler(list_id=list_id, current_board=current_board)
-                if not current_list:
-                    return handle_redirect("Yetkisiz Erişim", "warning" , 'board_detail', board_id=board_id)
-                else:
-                    return handle_redirect("Liste Başarıyla Silindi", "success", 'board_detail', board_id=board_id)
+        if action == 'update_list':
+            title = request.form.get('list_title')
+            if not title:
+                return handle_redirect("Başlık Boş Olamaz", "warning", 'board_detail', board_id=board_id)
+            list_id = request.form.get('list_id')
+            current_list = handler(title=title, list_id=list_id, current_board=current_board)
+            if not current_list:
+                return handle_redirect("Yetkisiz Erişim", "warning" , 'board_detail', board_id=board_id)
+            else:
+                return handle_redirect("Liste Başarıyla Güncellendi", "success" , 'board_detail', board_id=board_id)
+        if action == 'delete_list':
+            list_id = request.form.get('list_id')
+            current_list = handler(list_id=list_id, current_board=current_board)
+            if not current_list:
+                return handle_redirect("Yetkisiz Erişim", "warning" , 'board_detail', board_id=board_id)
+            else:
+                return handle_redirect("Liste Başarıyla Silindi", "success", 'board_detail', board_id=board_id)
 
 
-            # Liste Detayları (Listeye Görev Ekleme)
-            elif action == 'create_quest':
-                list_id = request.form.get('list_id')
-                current_list = db.session.execute(
-                    db.select(List).filter_by(id=list_id, board_id=board_id)).scalar_one_or_none()
-                if not current_list:
-                    return handle_redirect("Yetkisiz Erişim", "warning")
-                title = request.form.get('quest_title')
-                if not title:
-                    return handle_redirect("Başlık Boş Olamaz", "warning", 'board_detail', board_id=board_id)
+        # Liste Detayları (Listeye Görev Ekleme)
+        elif action == 'create_quest':
+            list_id = request.form.get('list_id')
+            current_list = db.session.execute(
+                db.select(List).filter_by(id=list_id, board_id=board_id)).scalar_one_or_none()
+            if not current_list:
+                return handle_redirect("Yetkisiz Erişim", "warning")
+            title = request.form.get('quest_title')
+            if not title:
+                return handle_redirect("Başlık Boş Olamaz", "warning", 'board_detail', board_id=board_id)
 
-                description = request.form.get('quest_description')
-                quest_notes = request.form.get('quest_notes')
-                new_quest = handler(title=title, description=description, quest_notes=quest_notes, current_list=current_list)
-                return handle_redirect("Görev Başarıyla Oluşturuldu", "success", "board_detail", board_id=board_id)
+            description = request.form.get('quest_description')
+            quest_notes = request.form.get('quest_notes')
+            new_quest = handler(title=title, description=description, quest_notes=quest_notes, current_list=current_list)
+            return handle_redirect("Görev Başarıyla Oluşturuldu", "success", "board_detail", board_id=board_id)
 
-            elif action == 'update_quest':
-                quest_title = request.form.get('quest_title')
-                if not quest_title:
-                    return handle_redirect("Lütfen Bir Görev Başlığı Giriniz...", "warning", 'board_detail', board_id=board_id)
-                quest_description = request.form.get('quest_description')
-                quest_notes = request.form.get('quest_notes')
-                quest_id = request.form.get('quest_id')
-                current_quest = handler(title=quest_title, quest_id=quest_id, description=quest_description, quest_notes=quest_notes)
-                if not current_quest:
-                    return handle_redirect("Yetkisiz Erişim", "warning", 'board_detail', board_id=board_id)
-                else:
-                    return handle_redirect("Görev İsmi Başarıyla Değiştirildi", "success", "board_detail", board_id=board_id)
+        elif action == 'update_quest':
+            quest_title = request.form.get('quest_title')
+            if not quest_title:
+                return handle_redirect("Lütfen Bir Görev Başlığı Giriniz...", "warning", 'board_detail', board_id=board_id)
+            quest_description = request.form.get('quest_description')
+            quest_notes = request.form.get('quest_notes')
+            quest_id = request.form.get('quest_id')
+            current_quest = handler(title=quest_title, quest_id=quest_id, description=quest_description, quest_notes=quest_notes)
+            if not current_quest:
+                return handle_redirect("Yetkisiz Erişim", "warning", 'board_detail', board_id=board_id)
+            else:
+                return handle_redirect("Görev İsmi Başarıyla Değiştirildi", "success", "board_detail", board_id=board_id)
 
-            elif action == 'delete_quest':
-                quest_id = request.form.get('quest_id')
-                current_quest = handler(quest_id=quest_id)
-                if not current_quest:
-                    return handle_redirect("Yetkisiz Erişim", "warning", 'board_detail', board_id=board_id)
-                else:
-                    return handle_redirect("Görev Başarıyla Silindi", "success", 'board_detail', board_id=board_id)
+        elif action == 'delete_quest':
+            quest_id = request.form.get('quest_id')
+            current_quest = handler(quest_id=quest_id)
+            if not current_quest:
+                return handle_redirect("Yetkisiz Erişim", "warning", 'board_detail', board_id=board_id)
+            else:
+                return handle_redirect("Görev Başarıyla Silindi", "success", 'board_detail', board_id=board_id)
 
-            # Görev Detayları (Görev Durum Güncelleme)
-            elif action == 'toggle_quest_status':
-                quest_id = request.form.get('quest_id')
-                is_finished = 'is_finished' in request.form
-                current_quest = db.session.execute(db.select(Quest).filter_by(id=quest_id)).scalar()
+        # Görev Detayları (Görev Durum Güncelleme)
+        elif action == 'toggle_quest_status':
+            quest_id = request.form.get('quest_id')
+            is_finished = 'is_finished' in request.form
+            current_quest = db.session.execute(db.select(Quest).filter_by(id=quest_id)).scalar()
 
-                if not current_quest:
-                    return handle_redirect("Yetkisiz Erişim", "warning")
+            if not current_quest:
+                return handle_redirect("Yetkisiz Erişim", "warning")
 
-                quest_status = handler(current_quest, is_finished)
-                return handle_redirect("Görev Durumu Güncellendi", "success","board_detail", board_id=board_id)
+            quest_status = handler(current_quest, is_finished)
+            return handle_redirect("Görev Durumu Güncellendi", "success","board_detail", board_id=board_id)
 
     return render_template("board_detail.html", board=current_board)
 
