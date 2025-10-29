@@ -28,7 +28,7 @@ Modern, basit ve hızlı bir Pano → Liste → Görev yönetim uygulaması. Kul
 - Giriş/Kayıt/Kullanıcı: `templates/login.html`, `templates/register.html`, `templates/user_detail.html`
 
 ### 🚀 Canlı Demo
-- Demo: https://www.demolink.com (güncelleyeceksiniz)
+- Demo: https://taskflow-flask-asp7.onrender.com/
 
 ### Dizinyapısı (Özet)
 ```
