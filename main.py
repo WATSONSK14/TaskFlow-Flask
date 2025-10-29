@@ -295,5 +295,9 @@ def logout():
     return redirect(url_for('first_page'))
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(
+        host='0.0.0.0',
+        port=int(os.getenv('PORT', 5000)),
+        debug=(os.getenv('APP_ENV', 'development').lower() != 'production')
+    )
 
