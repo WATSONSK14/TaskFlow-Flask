@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% block title %}Ana Sayfa{% endblock %}
+
+{% block body %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    
+    <div class="dashboard-container">
+        {% include 'includes/sidebar.html' %}
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Flash Mesajları -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                <div class="form-flash-messages">
+                  {% for category, message in messages %}
+                    <div class="form-flash-message form-flash-{{ category }}">
+                      {{ message }}
+                    </div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            {% endwith %}
+
+            <div class="content-header">
+                <h1 class="content-title">Hoş Geldiniz, {{ current_user.username }}!</h1>
+                <p class="content-subtitle">Projelerinizi organize etmeye başlayın</p>
+            </div>
+            
+            <!-- Dashboard Cards -->
+            <div class="content-grid">
+                <!-- Quick Stats Card -->
+                <div class="content-card">
+                    <div class="card-header">
+                        <span class="card-icon">📊</span>
+                        <h3 class="card-title">İstatistikler</h3>
+                    </div>
+                    <div class="card-content">
+                        <p><strong>Toplam Pano:</strong> {{ boards|length }}</p>
+                        <p><strong>Toplam Liste :</strong> {{ lists|length }}</p>
+                        <p><strong>Toplam Görev:</strong> {{ quests|length }}</p>
+                        <p><strong>Tamamlanan Görev:</strong> {{ quests | selectattr('is_finished', 'equalto', True) | list | length }}</p>
+                    </div>
+                    <div class="card-actions">
+                        <a href="#" class="card-btn card-btn-secondary">Detaylar</a>
+                    </div>
+                </div>
+
+                <!-- Welcome Card -->
+                <div class="content-card">
+                    <div class="card-header">
+                        <span class="card-icon">👋</span>
+                        <h3 class="card-title">Hoş Geldiniz!</h3>
+                    </div>
+                    <div class="card-content">
+                        <p>Todo Site'a hoş geldiniz! Projelerinizi organize etmek için panonuzu oluşturun.</p>
+                    </div>
+                </div>
+                
+                <!-- Tips Card -->
+                <div class="content-card">
+                    <div class="card-header">
+                        <span class="card-icon">💡</span>
+                        <h3 class="card-title">İpuçları</h3>
+                    </div>
+                    <div class="card-content">
+                        <p>• Panolarınızı Oluşturun</p>
+                        <p>• Listeler Ekleyerek Alanlarınızı Belirleyin</p>
+                        <p>• Görevler Ekleyerek İşlerinizi Şekillendirin</p>
+                    </div>
+                </div>
+                
+                <!-- Recent Boards Card -->
+                <div class="content-card">
+                    <div class="card-header">
+                        <span class="card-icon">📋</span>
+                        <h3 class="card-title">Son Panolar</h3>
+                    </div>
+                    <div class="card-content">
+                        {% if boards %}
+                            {% for board in boards[:3] %}
+                                <p><strong>{{ board.title }}</strong> - {{ board.created_at.strftime('%d.%m.%Y') }}</p>
+                            {% endfor %}
+                            {% if boards|length > 3 %}
+                                <p><em>... ve {{ boards|length - 3 }} pano daha</em></p>
+                            {% endif %}
+                        {% else %}
+                            <p>Henüz pano yok</p>
+                            <p>İlk panonuzu oluşturmak için yukarıdaki butona tıklayın.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+{% endblock %}

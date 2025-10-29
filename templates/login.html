@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% block title %}Giriş Yap{% endblock %}
+
+{% block body %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/forms.css') }}">
+    
+    <div class="form-container">
+        <!-- İllüstrasyonlar -->
+        <div class="form-illustrations">
+            <!-- Sol taraf karakterler -->
+            <div class="illustration-left">
+                <div class="illustration-character character-1">👨‍💻</div>
+                <div class="illustration-character character-2">👩‍💼</div>
+                <div class="illustration-ui illustration-ui-1">📊</div>
+                <div class="illustration-ui illustration-ui-3">📋</div>
+            </div>
+            
+            <!-- Sağ taraf karakterler -->
+            <div class="illustration-right">
+                <div class="illustration-character character-3">🤖</div>
+                <div class="illustration-character character-4">👨‍🎨</div>
+                <div class="illustration-ui illustration-ui-2">📈</div>
+                <div class="illustration-ui illustration-ui-4">🔑</div>
+            </div>
+            
+            <!-- Floating particles -->
+            <div class="particle particle-1"></div>
+            <div class="particle particle-2"></div>
+            <div class="particle particle-3"></div>
+            <div class="particle particle-4"></div>
+            <div class="particle particle-5"></div>
+            <div class="particle particle-6"></div>
+        </div>
+        
+        <div class="form-wrapper">
+            <h1 class="form-title">Giriş Yap</h1>
+            <p class="form-subtitle">Hesabınıza giriş yapın</p>
+
+            <!-- Flash Mesajları -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                <div class="form-flash-messages">
+                  {% for category, message in messages %}
+                    <div class="form-flash-message form-flash-{{ category }}">
+                      {{ message }}
+                    </div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            {% endwith %}
+
+            <!-- Login Form -->
+            <form method="POST">
+                {{ form.hidden_tag() }}
+
+                <!-- Email -->
+                <div class="form-group">
+                    <label class="form-label">{{ form.email.label.text }}</label>
+                    {{ form.email(class="form-input", placeholder="E-posta adresinizi girin") }}
+                    {% for error in form.email.errors %}
+                        <span class="error-message">{{ error }}</span>
+                    {% endfor %}
+                </div>
+
+                <!-- Password -->
+                <div class="form-group">
+                    <label class="form-label">{{ form.password.label.text }}</label>
+                    {{ form.password(class="form-input", placeholder="Şifrenizi girin") }}
+                    {% for error in form.password.errors %}
+                        <span class="error-message">{{ error }}</span>
+                    {% endfor %}
+                </div>
+
+                {{ form.submit(class="form-submit") }}
+            </form>
+
+            <div class="form-link">
+                Hesabınız yok mu? 
+                <a href="{{ url_for('register') }}">Kayıt olun</a>
+            </div>
+        </div>
+    </div>
+{% endblock %}

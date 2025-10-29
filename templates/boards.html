@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+{% block title %}Panolar{% endblock %}
+
+{% block body %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    
+    <div class="dashboard-container">
+        {% include 'includes/sidebar.html' %}
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Flash Mesajları -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                <div class="form-flash-messages">
+                  {% for category, message in messages %}
+                    <div class="form-flash-message form-flash-{{ category }}">
+                      {{ message }}
+                    </div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            {% endwith %}
+            
+            <div class="content-header">
+                <h1 class="content-title">Panolar</h1>
+                <p class="content-subtitle">Projelerinizi organize edin</p>
+            </div>
+            
+            {% if boards %}
+                <!-- Boards Grid -->
+                <div class="content-grid">
+                    {% for board in boards %}
+                        <div class="content-card board-card">
+                            <div class="card-header">
+                                <span class="card-icon">📋</span>
+                                <h3 class="card-title">{{ board.title }}</h3>
+                            </div>
+                            <div class="card-content">
+                                <p><strong>Oluşturulma:</strong> {{ board.created_at.strftime('%d.%m.%Y') }}</p>
+                                <p><strong>Liste Sayısı:</strong> {{ board.lists|length }}</p>
+                                <p><strong>Toplam Görev:</strong> 
+                                    {% set total_quests = 0 %}
+                                    {% for list in board.lists %}
+                                        {% set total_quests = total_quests + list.quests|length %}
+                                    {% endfor %}
+                                    {{ total_quests }}
+                                </p>
+                            </div>
+                            <div class="card-actions">
+                                <a href="{{ url_for('board_detail', board_id=board.id) }}" class="card-btn card-btn-primary">Aç</a>
+                                <button onclick="showEditForm({{ board.id }}, '{{ board.title }}')" class="card-btn card-btn-secondary">Düzenle</button>
+                                <button onclick="deleteBoard({{ board.id }}, '{{ board.title }}')" class="card-btn card-btn-danger">Sil</button>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Create New Board Card -->
+                <div class="content-grid" style="margin-top: 20px;">
+                    <div class="content-card create-board-card" id="createBoardCard">
+                        <div class="card-header">
+                            <span class="card-icon">➕</span>
+                            <h3 class="card-title">Yeni Pano Oluştur</h3>
+                        </div>
+                        <div class="card-content">
+                            <p>Yeni bir proje için pano oluşturun</p>
+                        </div>
+                        <div class="card-actions">
+                            <button onclick="showCreateForm()" class="card-btn card-btn-primary" id="createBtn">Pano Oluştur</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Create Board Form (Hidden by default) -->
+                <div class="content-grid" style="margin-top: 20px; display: none;" id="createBoardForm">
+                    <div class="content-card create-form-card">
+                        <div class="card-header">
+                            <span class="card-icon">📝</span>
+                            <h3 class="card-title">Pano Oluştur</h3>
+                        </div>
+                        <form method="POST" class="board-create-form">
+                            <input type="hidden" name="action" value="create_board">
+                            <div class="form-group">
+                                <label class="form-label">Pano Başlığı</label>
+                                <input type="text" name="board_title" class="form-input" placeholder="Pano başlığını girin" required>
+                            </div>
+                            <div class="card-actions">
+                                <button type="submit" class="card-btn card-btn-primary">Oluştur</button>
+                                <button type="button" onclick="hideCreateForm()" class="card-btn card-btn-secondary">İptal</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Edit Board Form (Hidden by default) -->
+                <div class="content-grid" style="margin-top: 20px; display: none;" id="editBoardForm">
+                    <div class="content-card create-form-card">
+                        <div class="card-header">
+                            <span class="card-icon">✏️</span>
+                            <h3 class="card-title">Pano Düzenle</h3>
+                        </div>
+                        <form method="POST" class="board-edit-form">
+                            <input type="hidden" name="action" value="update_board">
+                            <input type="hidden" name="board_id" id="editBoardId">
+                            <div class="form-group">
+                                <label class="form-label">Pano Başlığı</label>
+                                <input type="text" name="board_title" id="editBoardTitle" class="form-input" placeholder="Pano başlığını girin" required>
+                            </div>
+                            <div class="card-actions">
+                                <button type="submit" class="card-btn card-btn-primary">Güncelle</button>
+                                <button type="button" onclick="hideEditForm()" class="card-btn card-btn-secondary">İptal</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            {% else %}
+                <!-- Empty State -->
+                <div class="empty-state">
+                    <div class="empty-icon">📊</div>
+                    <h3 class="empty-title">Henüz pano yok</h3>
+                    <p class="empty-description">İlk panonuzu oluşturmak için aşağıdaki butona tıklayın.</p>
+                    <div style="margin-top: 30px;">
+                        <button onclick="showCreateForm()" class="card-btn card-btn-primary" style="font-size: 1.1rem; padding: 15px 30px;">İlk Panonuzu Oluşturun</button>
+                    </div>
+                </div>
+                
+                <!-- Create Board Form (Hidden by default) -->
+                <div class="content-grid" style="margin-top: 20px; display: none;" id="createBoardForm">
+                    <div class="content-card create-form-card">
+                        <div class="card-header">
+                            <span class="card-icon">📝</span>
+                            <h3 class="card-title">Pano Oluştur</h3>
+                        </div>
+                        <form method="POST" class="board-create-form">
+                            <input type="hidden" name="action" value="create_board">
+                            <div class="form-group">
+                                <label class="form-label">Pano Başlığı</label>
+                                <input type="text" name="board_title" class="form-input" placeholder="Pano başlığını girin" required>
+                            </div>
+                            <div class="card-actions">
+                                <button type="submit" class="card-btn card-btn-primary">Oluştur</button>
+                                <button type="button" onclick="hideCreateForm()" class="card-btn card-btn-secondary">İptal</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            {% endif %}
+        </main>
+    </div>
+    
+    <script>
+        function showCreateForm() {
+            document.getElementById('createBoardForm').style.display = 'block';
+            document.getElementById('createBoardCard').style.display = 'none';
+            // Focus on input
+            setTimeout(() => {
+                document.querySelector('input[name="board_title"]').focus();
+            }, 100);
+        }
+        
+        function hideCreateForm() {
+            document.getElementById('createBoardForm').style.display = 'none';
+            document.getElementById('createBoardCard').style.display = 'block';
+        }
+        
+        function showEditForm(boardId, boardTitle) {
+            document.getElementById('editBoardId').value = boardId;
+            document.getElementById('editBoardTitle').value = boardTitle;
+            document.getElementById('editBoardForm').style.display = 'block';
+            // Focus on input
+            setTimeout(() => {
+                document.getElementById('editBoardTitle').focus();
+            }, 100);
+        }
+        
+        function hideEditForm() {
+            document.getElementById('editBoardForm').style.display = 'none';
+        }
+        
+        function deleteBoard(boardId, boardTitle) {
+            if (confirm('"' + boardTitle + '" panosunu silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.')) {
+                // Create a form to submit delete request
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.innerHTML = `
+                    <input type="hidden" name="action" value="delete_board">
+                    <input type="hidden" name="board_id" value="${boardId}">
+                `;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+    </script>
+{% endblock %}

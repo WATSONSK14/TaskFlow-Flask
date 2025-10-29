@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %} Hoş Geldiniz{% endblock %}
+
+{% block body %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/firstpage.css') }}">
+    
+    <div class="welcome-container">
+        <!-- Flash Mesajları -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="flash-messages">
+              {% for category, message in messages %}
+                <div class="flash-message flash-{{ category }}">
+                  {{ message }}
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        <!-- Ana İçerik -->
+        <div class="welcome-content">
+            <div class="welcome-text">
+                <h1 class="welcome-title">Bu panoyu görmek için kaydolun</h1>
+                <p class="welcome-description">
+                    Ulaşmanıza az kaldı! Erişmeye çalıştığınız pano bir hesap gerektiriyor.
+                </p>
+                
+                <div class="welcome-buttons">
+                    <a href="{{ url_for('register') }}" class="btn btn-primary">
+                        Ücretsiz kaydolun
+                    </a>
+                    <p class="login-text">
+                        Zaten bir hesabınız var mı? 
+                        <a href="{{ url_for('login') }}" class="login-link">Oturum açın</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- İllüstrasyon -->
+        <div class="welcome-illustration">
+            <div class="floating-elements">
+                <div class="element element-1">📊</div>
+                <div class="element element-2">📋</div>
+                <div class="element element-3">🔑</div>
+                <div class="element element-4">📈</div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

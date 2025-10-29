@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block title %}Görev Detayı - {{ quest.title }}{% endblock %}
+
+{% block body %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/quest_detail.css') }}">
+
+    <div class="dashboard-container">
+        {% include 'includes/sidebar.html' %}
+
+        <main class="main-content">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                <div class="form-flash-messages">
+                  {% for category, message in messages %}
+                    <div class="form-flash-message form-flash-{{ category }}">
+                      {{ message }}
+                    </div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            {% endwith %}
+
+            <div class="qd-header">
+                <div class="qd-title-area">
+                    <h1 class="qd-title">Görev Adı: {{ quest.title }}</h1>
+                </div>
+                <div class="qd-actions">
+                    <a href="{{ url_for('board_detail', board_id=quest.list.board_id) }}" class="qd-btn qd-btn-secondary">← Panoya Dön</a>
+                </div>
+            </div>
+
+            <div class="qd-grid">
+                <section class="qd-card">
+                    <h3 class="qd-card-title">Durum</h3>
+                    <div class="qd-status">
+                        {% if quest.is_finished %}
+                            <span class="qd-badge qd-badge-success">Tamamlandı</span>
+                            {% if quest.completed_at %}<span class="qd-meta">( {{ quest.completed_at.strftime('%d.%m.%Y %H:%M') }} )</span>{% endif %}
+                        {% else %}
+                            <span class="qd-badge qd-badge-warning">Devam Ediyor</span>
+                        {% endif %}
+                    </div>
+                </section>
+
+                <section class="qd-card">
+                    <h3 class="qd-card-title">Açıklama</h3>
+                    {% if quest.description %}
+                        <p class="qd-text">{{ quest.description }}</p>
+                    {% else %}
+                        <p class="qd-empty">Açıklama eklenmemiş.</p>
+                    {% endif %}
+                </section>
+
+                <section class="qd-card">
+                    <h3 class="qd-card-title">Notlar</h3>
+                    {% if quest.notes %}
+                        <div class="qd-notes">{{ quest.notes }}</div>
+                    {% else %}
+                        <p class="qd-empty">Not eklenmemiş.</p>
+                    {% endif %}
+                </section>
+
+                <section class="qd-card">
+                    <h3 class="qd-card-title">Detaylar</h3>
+                    <ul class="qd-list">
+                        <li><span>Pano Adı:</span> {{ quest.list.board.title }}</li>
+                        <li><span>Liste Adı:</span> {{ quest.list.title }}</li>
+                        <li><span>Başlangıç:</span> {{quest.created_at.strftime('%d.%m.%Y %H:%M')}}</li>
+                        <li><span>Bitiş:</span> {% if quest.completed_at %}{{quest.completed_at.strftime('%d.%m.%Y %H:%M')}}{% else %}-{% endif %}</li>
+                    </ul>
+                </section>
+            </div>
+        </main>
+    </div>
+{% endblock %}

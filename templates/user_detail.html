@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% block title %}Kullanıcı Detayları{% endblock %}
+
+{% block body %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/userdetail.css') }}">
+    
+    <div class="dashboard-container">
+        {% include 'includes/sidebar.html' %}
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="user-detail-container">
+
+
+                <!-- Flash Mesajları -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                  {% if messages %}
+                    <div class="form-flash-messages">
+                      {% for category, message in messages %}
+                        <div class="form-flash-message form-flash-{{ category }}">
+                          {{ message }}
+                        </div>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                {% endwith %}
+
+                <!-- User Info Card -->
+                <div class="user-info-card">
+                    <!-- Avatar -->
+                    <div class="user-avatar">
+                        <div class="avatar-circle">
+                            {{ current_user.username[0].upper() }}
+                        </div>
+                        <h2 class="user-name">{{ current_user.username }}</h2>
+                        <p class="user-email">{{ current_user.email }}</p>
+                    </div>
+
+                    <!-- User Details Form -->
+                    <form method="POST" class="user-details-form">
+                        <div class="user-details">
+                            <!-- Username (Editable) -->
+                            <div class="detail-item editable">
+                                <div class="detail-label">Kullanıcı Adı <span class="edit-indicator">✏️ Düzenlenebilir</span></div>
+                                <input type="text" name="username" value="{{ current_user.username }}" class="detail-input" required>
+                            </div>
+
+                            <!-- Email (Read-only) -->
+                            <div class="detail-item read-only">
+                                <div class="detail-label">E-posta Adresi <span class="read-only-indicator">🔒 Değiştirilemez</span></div>
+                                <div class="detail-value">{{ current_user.email }}</div>
+                            </div>
+
+                            <!-- Password (Read-only) -->
+                            <div class="detail-item read-only">
+                                <div class="detail-label">Şifre <span class="read-only-indicator">🔒 Değiştirilemez</span></div>
+                                <div class="detail-value password">••••••••</div>
+                            </div>
+
+                            <!-- Account Type (Read-only) -->
+                            <div class="detail-item read-only">
+                                <div class="detail-label">Hesap Türü <span class="read-only-indicator">🔒 Sistem</span></div>
+                                <div class="detail-value">
+                                    {% if current_user.authority == 0 %}
+                                        Standart Kullanıcı
+                                    {% elif current_user.authority == 1 %}
+                                        Premium Kullanıcı
+                                    {% else %}
+                                        Yönetici
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Created Date (Read-only) -->
+                            <div class="detail-item read-only">
+                                <div class="detail-label">Hesap Oluşturma Tarihi <span class="read-only-indicator">🔒 Sistem</span></div>
+                                <div class="detail-value date">
+                                    {{ current_user.created_at.strftime('%d.%m.%Y %H:%M') if current_user.created_at else 'Bilinmiyor' }}
+                                </div>
+                            </div>
+
+                            <!-- Last Login (Read-only) -->
+                            <div class="detail-item read-only">
+                                <div class="detail-label">Son Giriş Tarihi <span class="read-only-indicator">🔒 Sistem</span></div>
+                                <div class="detail-value date">
+                                    {{ current_user.last_login.strftime('%d.%m.%Y %H:%M') if current_user.last_login else 'İlk giriş' }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="user-actions">
+                            <button type="submit" name="action" value="kayit" class="action-btn btn-primary">
+                                💾 Kayıt Et
+                            </button>
+                            <a href="{{ url_for('home') }}" class="action-btn btn-secondary">
+                                🏠 Ana Sayfa
+                            </a>
+                            <a href="{{ url_for('logout') }}" class="action-btn btn-danger">
+                                🚪 Çıkış Yap
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+{% endblock %}

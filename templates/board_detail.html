@@ -1,0 +1,350 @@
+{% extends 'base.html' %}
+{% block title %}{{ board.title }}{% endblock %}
+
+{% block body %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/board_detail.css') }}">
+    
+    <div class="dashboard-container">
+        {% include 'includes/sidebar.html' %}
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Flash Mesajları -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                <div class="form-flash-messages">
+                  {% for category, message in messages %}
+                    <div class="form-flash-message form-flash-{{ category }}">
+                      {{ message }}
+                    </div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            {% endwith %}
+
+            <!-- Board Header -->
+            <div class="board-header">
+                <div class="board-title-section">
+                    <h1 class="board-title">{{ board.title }}</h1>
+                    <p class="board-subtitle">Pano oluşturulma: {{ board.created_at.strftime('%d.%m.%Y') }}</p>
+                </div>
+                <div class="board-actions">
+                    <button onclick="showAddListForm()" class="board-btn board-btn-primary add-list-fixed">
+                        ➕ Liste Ekle
+                    </button>
+                    <a href="{{ url_for('board') }}" class="board-btn board-btn-secondary">
+                        ← Panolar
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Board Content -->
+            <div class="board-content">
+                {% if board.lists %}
+                    <!-- Lists Container -->
+                    <div class="lists-container">
+                        {% for list in board.lists %}
+                            <div class="list-card" data-list-id="{{ list.id }}">
+                                <div class="list-header">
+                                    <div class="list-title-row">
+                                        <button type="button" class="list-toggle" onclick="toggleListCollapse({{ list.id }})" aria-label="Aç/Kapa"><span id="toggle-icon-{{ list.id }}">▼</span></button>
+                                        <h3 class="list-title">{{ list.title }}</h3>
+                                    </div>
+                                    <div class="list-actions">
+                                        <button onclick="showAddQuestForm({{ list.id }})" class="list-btn list-btn-primary">
+                                            ➕ Görev Ekle
+                                        </button>
+                                        <button onclick="editList({{ list.id }})" class="list-btn list-btn-secondary">
+                                            ✏️
+                                        </button>
+                                        <button onclick="deleteList({{ list.id }}, '{{ list.title }}')" class="list-btn list-btn-danger">
+                                            🗑️
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="list-content" id="list-content-{{ list.id }}">
+                                    {% if list.quests %}
+                                        {% for quest in list.quests %}
+                                            <div class="quest-card {% if quest.is_finished %}completed{% endif %}" data-quest-id="{{ quest.id }}">
+                                                <form method="POST" class="quest-status-form">
+                                                    <input type="hidden" name="action" value="toggle_quest_status">
+                                                    <input type="hidden" name="quest_id" value="{{ quest.id }}">
+                                                    <label class="quest-checkbox-container">
+                                                        <input type="checkbox" name="is_finished" onchange="this.form.submit()" {% if quest.is_finished %}checked{% endif %}>
+                                                        <span class="checkmark"></span>
+                                                    </label>
+                                                    <div class="quest-content">
+                                                        <h4 class="quest-title {% if quest.is_finished %}completed-text{% endif %}"><a href="{{ url_for('quest_detail', quest_id=quest.id) }}" class="quest-link">{{ quest.title }}</a></h4>
+                                                        {% if quest.description %}
+                                                            <p class="quest-description">{{ quest.description }}</p>
+                                                        {% endif %}
+                                                        
+                                                        
+                                                    </div>
+                                                    <div class="quest-actions">
+                                                        <button type="button" onclick="editQuest({{ quest.id }})" class="quest-btn quest-btn-secondary">
+                                                            ✏️
+                                                        </button>
+                                                        <button type="button" onclick="deleteQuest({{ quest.id }})" class="quest-btn quest-btn-danger">
+                                                            🗑️
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="empty-quest">
+                                            <p>Henüz görev yok</p>
+                                            <button onclick="showAddQuestForm({{ list.id }})" class="quest-btn quest-btn-primary">
+                                                İlk görevi ekle
+                                            </button>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <!-- Empty State -->
+                    <div class="empty-board">
+                        <div class="empty-icon">📋</div>
+                        <h3 class="empty-title">Henüz liste yok</h3>
+                        <p class="empty-description">İlk listenizi oluşturmak için yukarıdaki butona tıklayın.</p>
+                        <button onclick="showAddListForm()" class="board-btn board-btn-primary">
+                            İlk Listenizi Oluşturun
+                        </button>
+                    </div>
+                {% endif %}
+            </div>
+        </main>
+    </div>
+    
+    <!-- Add List Form (Hidden by default) -->
+    <div class="modal-overlay" id="addListModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Yeni Liste Oluştur</h3>
+                <button onclick="hideAddListForm()" class="modal-close">×</button>
+            </div>
+            <form method="POST" class="list-create-form">
+                <input type="hidden" name="action" value="create_list">
+                <input type="hidden" name="board_id" value="{{ board.id }}">
+                <div class="form-group">
+                    <label class="form-label">Liste Başlığı</label>
+                    <input type="text" name="list_title" class="form-input" placeholder="Liste başlığını girin" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="board-btn board-btn-primary">Oluştur</button>
+                    <button type="button" onclick="hideAddListForm()" class="board-btn board-btn-secondary">İptal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Add Quest Form (Hidden by default) -->
+    <div class="modal-overlay" id="addQuestModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Yeni Görev Oluştur</h3>
+                <button onclick="hideAddQuestForm()" class="modal-close">×</button>
+            </div>
+            <form method="POST" class="quest-create-form">
+                <input type="hidden" name="action" value="create_quest">
+                <input type="hidden" name="list_id" id="questListId">
+                <div class="form-group">
+                    <label class="form-label">Görev Başlığı</label>
+                    <input type="text" name="quest_title" class="form-input" placeholder="Görev başlığını girin" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Açıklama (Opsiyonel)</label>
+                    <textarea name="quest_description"   class="form-textarea" placeholder="Görev açıklaması..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Not (Opsiyonel)</label>
+                    <textarea name="quest_notes" class="form-textarea" placeholder="Görev notları..." rows="3"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="board-btn board-btn-primary">Oluştur</button>
+                    <button type="button" onclick="hideAddQuestForm()" class="board-btn board-btn-secondary">İptal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Edit List Form (Hidden by default) -->
+    <div class="modal-overlay" id="editListModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Liste Düzenle</h3>
+                <button onclick="hideEditListForm()" class="modal-close">×</button>
+            </div>
+            <form method="POST" class="list-edit-form">
+                <input type="hidden" name="action" value="update_list">
+                <input type="hidden" name="list_id" id="editListId">
+                <div class="form-group">
+                    <label class="form-label">Liste Başlığı</label>
+                    <input type="text" name="list_title" id="editListTitle" class="form-input" placeholder="Liste başlığını girin" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="board-btn board-btn-primary">Güncelle</button>
+                    <button type="button" onclick="hideEditListForm()" class="board-btn board-btn-secondary">İptal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Edit Quest Form (Hidden by default) -->
+    <div class="modal-overlay" id="editQuestModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Görev Düzenle</h3>
+                <button onclick="hideEditQuestForm()" class="modal-close">×</button>
+            </div>
+            <form method="POST" class="quest-edit-form">
+                <input type="hidden" name="action" value="update_quest">
+                <input type="hidden" name="quest_id" id="editQuestId">
+                <div class="form-group">
+                    <label class="form-label">Görev Başlığı</label>
+                    <input type="text" name="quest_title" id="editQuestTitle" class="form-input" placeholder="Görev başlığını girin" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Açıklama (Opsiyonel)</label>
+                    <textarea name="quest_description" id="editQuestDescription" class="form-textarea" placeholder="Görev açıklaması..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Not (Opsiyonel)</label>
+                    <textarea name="quest_notes" id="editQuestNotes" class="form-textarea" placeholder="Görev notları..." rows="3"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="board-btn board-btn-primary">Güncelle</button>
+                    <button type="button" onclick="hideEditQuestForm()" class="board-btn board-btn-secondary">İptal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    
+    <script>
+        function showAddListForm() {
+            document.getElementById('addListModal').style.display = 'flex';
+            setTimeout(() => {
+                document.querySelector('input[name="list_title"]').focus();
+            }, 100);
+        }
+        
+        function hideAddListForm() {
+            document.getElementById('addListModal').style.display = 'none';
+        }
+        
+        function showAddQuestForm(listId) {
+            document.getElementById('questListId').value = listId;
+            document.getElementById('addQuestModal').style.display = 'flex';
+            setTimeout(() => {
+                document.querySelector('input[name="quest_title"]').focus();
+            }, 100);
+        }
+        
+        function hideAddQuestForm() {
+            document.getElementById('addQuestModal').style.display = 'none';
+        }
+        
+        function editList(listId) {
+            // Liste başlığını bul
+            const listCard = document.querySelector(`[data-list-id="${listId}"]`);
+            const listTitle = listCard.querySelector('.list-title').textContent;
+            
+            // Form alanlarını doldur
+            document.getElementById('editListId').value = listId;
+            document.getElementById('editListTitle').value = listTitle;
+            
+            // Modal'ı göster
+            document.getElementById('editListModal').style.display = 'flex';
+            setTimeout(() => {
+                document.getElementById('editListTitle').focus();
+            }, 100);
+        }
+        
+        function hideEditListForm() {
+            document.getElementById('editListModal').style.display = 'none';
+        }
+        
+        function deleteList(listId, listTitle) {
+            if (confirm('"' + listTitle + '" listesini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.')) {
+                // Create a form to submit delete request
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.innerHTML = `
+                    <input type="hidden" name="action" value="delete_list">
+                    <input type="hidden" name="list_id" value="${listId}">
+                `;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+        
+        function editQuest(questId) {
+            // Görev bilgilerini bul
+            const questCard = document.querySelector(`[data-quest-id="${questId}"]`);
+            const questTitle = questCard.querySelector('.quest-title').textContent;
+            const questDescription = questCard.querySelector('.quest-description') ? 
+                questCard.querySelector('.quest-description').textContent : '';
+            const questNotes = questCard.querySelector('.notes-content') ? 
+                questCard.querySelector('.notes-content').textContent : '';
+            
+            // Form alanlarını doldur
+            document.getElementById('editQuestId').value = questId;
+            document.getElementById('editQuestTitle').value = questTitle;
+            document.getElementById('editQuestDescription').value = questDescription;
+            document.getElementById('editQuestNotes').value = questNotes;
+            
+            // Modal'ı göster
+            document.getElementById('editQuestModal').style.display = 'flex';
+            setTimeout(() => {
+                document.getElementById('editQuestTitle').focus();
+            }, 100);
+        }
+        
+        function hideEditQuestForm() {
+            document.getElementById('editQuestModal').style.display = 'none';
+        }
+        
+        function deleteQuest(questId) {
+            if (confirm('Bu görevi silmek istediğinizden emin misiniz?')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.innerHTML = `
+                    <input type="hidden" name="action" value="delete_quest">
+                    <input type="hidden" name="quest_id" value="${questId}">
+                `;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+        
+        // Modal dışına tıklayınca kapat
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal-overlay')) {
+                hideAddListForm();
+                hideAddQuestForm();
+                hideEditListForm();
+                hideEditQuestForm();
+            }
+        });
+        // Listeyi aç/kapa fonksiyonu
+       function toggleListCollapse(listId) {
+           const el = document.getElementById('list-content-' + listId);
+           const icon = document.getElementById('toggle-icon-' + listId);
+           if (el.style.display === 'none') {
+               el.style.display = '';
+               if(icon) icon.textContent = '▼';
+           } else {
+               el.style.display = 'none';
+               if(icon) icon.textContent = '►';
+           }
+       }
+       
+    </script>
+{% endblock %}
